@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>linux环境下安装nginx</title>
+    <url>/20240905/ef772105e74b/</url>
+    <content><![CDATA[<h1 id="一：安装nginx"><a href="#一：安装nginx" class="headerlink" title="一：安装nginx"></a>一：安装nginx</h1><p>1、访问nginx官网在download页面，选择版本为Stable version，下载最新tar包。<br><a href="https://nginx.org/en/download.html">https://nginx.org/en/download.html</a></p>
+<p><img src="/images/pasted-3.png" alt="upload successful" loading="lazy"></p>
+<p>2、上传tar包至服务器，目录统一放置&#x2F;usr&#x2F;local目录下 （上传工具、方法推荐文章）</p>
+<pre class="line-numbers language-none"><code class="language-none">cd &#x2F;usr&#x2F;local<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>解压</p>
+<pre class="line-numbers language-none"><code class="language-none">tar -zxvf nginx-1.26.2.tar<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>3、通过yum安装依赖包 (yum源配置文章链接)</p>
+<pre class="line-numbers language-none"><code class="language-none">yum install -y gcc-c++ pcre pcre-devel zlib zlib-devel openssl openssl-devel<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>4、进入nginx目录，编译</p>
+<pre class="line-numbers language-none"><code class="language-none">cd nginx-1.26.2<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<pre class="line-numbers language-none"><code class="language-none">.&#x2F;configure \
+--prefix&#x3D;&#x2F;usr&#x2F;local&#x2F;nginx \
+--with-http_ssl_module<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>5、make编译安装</p>
+<pre class="line-numbers language-none"><code class="language-none">make&amp;&amp;make install<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>创建日志目录，以后可以到该目录查询nginx日志：&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;logs</p>
+<pre class="line-numbers language-none"><code class="language-none">mkdir &#x2F;usr&#x2F;local&#x2F;nginx&#x2F;logs<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>6、启动nginx</p>
+<pre class="line-numbers language-none"><code class="language-none">&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;sbin&#x2F;nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>查看状态</p>
+<pre class="line-numbers language-none"><code class="language-none">ps aux| grep nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>7、立即停止服务</p>
+<pre class="line-numbers language-none"><code class="language-none">&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;sbin&#x2F;nginx -s stop<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>8、查看端口占用情况</p>
+<pre class="line-numbers language-none"><code class="language-none">netstat -tlnp<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>9、添加至环境变量</p>
+<pre class="line-numbers language-none"><code class="language-none">vim &#x2F;etc&#x2F;profile<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>添加以下配置至profile</p>
+<pre class="line-numbers language-none"><code class="language-none">export PATH&#x3D;$PATH:&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;sbin&#x2F;nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>刷新配置</p>
+<pre class="line-numbers language-none"><code class="language-none">source &#x2F;etc&#x2F;profile<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h1 id="二：设置开机自启"><a href="#二：设置开机自启" class="headerlink" title="二：设置开机自启"></a>二：设置开机自启</h1><p>1、编写脚本</p>
+<pre class="line-numbers language-none"><code class="language-none">vim &#x2F;etc&#x2F;init.d&#x2F;nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>内容如下</p>
+<pre class="line-numbers language-none"><code class="language-none">#! &#x2F;bin&#x2F;sh
+# chkconfig:35 85 15
+### BEGIN INIT INFO
+# Provides:     nginx
+# Required-Start:  $all
+# Required-Stop:   $all
+# Default-Start:   2 3 4 5
+# Default-Stop:   0 1 6
+# Short-Description: starts the nginx web server
+# Description:    starts nginx using start-stop-daemon
+### END INIT INFO
+
+nginx&#x3D;&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;sbin&#x2F;nginx
+case $1 in
+start)
+netstat -anptu|grep nginx
+if [ $? -eq 0 ]; then
+echo “nginx server is already running”
+else
+echo “nginx server begin start…”
+$nginx
+fi
+;;
+stop)
+$nginx -s stop
+if [ $? -eq 0 ]; then
+echo “nginx server is stop”
+else
+echo “nginx server stop fail,try again!”
+fi
+;;
+status)
+netstat -anptu|grep nginx
+if [ $? -eq 0 ]; then
+echo “nginx server is running”
+else
+echo “nginx server is stoped”
+fi
+;;
+reload)
+$nginx -s reload
+if [ $? -eq 0 ]; then
+echo “nginx server is begin reload”
+else
+echo “nginx server reload fail!”
+fi
+;;
+*)
+echo “please enter &#123;start|reload|status|stop&#125;”
+;;
+esac<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>编辑结束后使用shift+：wq，写入并退出</p>
+<p>2、添加权限</p>
+<pre class="line-numbers language-none"><code class="language-none">chmod 775 &#x2F;etc&#x2F;init.d&#x2F;nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>3、添加nginx开机自启</p>
+<pre class="line-numbers language-none"><code class="language-none">chkconfig --add nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>查看自启列表</p>
+<pre class="line-numbers language-none"><code class="language-none">chkconfig --list<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h1 id="三：常用命令列表"><a href="#三：常用命令列表" class="headerlink" title="三：常用命令列表"></a>三：常用命令列表</h1><p>1、service命令</p>
+<pre class="line-numbers language-none"><code class="language-none">service nginx start #启动
+service nginx stop #立即停止
+service nginx status #查看状态
+service nginx reload #重载<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>2、全路径命令</p>
+<pre class="line-numbers language-none"><code class="language-none">&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;sbin&#x2F;nginx #启动
+&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;sbin&#x2F;nginx -s stop #立即停止
+&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;sbin&#x2F;nginx -s reload #重载<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>3、nginx根目录：</p>
+<pre class="line-numbers language-none"><code class="language-none">&#x2F;usr&#x2F;local&#x2F;nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>]]></content>
+      <tags>
+        <tag>linux</tag>
+        <tag>nginx</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>newAdd</title>
+    <url>/20240830/79a24d5cc704/</url>
+    <content><![CDATA[<p>这是一条测试数据。</p>
+<p>test<br><img src="/images/pasted-2.png" alt="upload successful" loading="lazy"></p>
+]]></content>
+  </entry>
+</search>
